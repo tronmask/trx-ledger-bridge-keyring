@@ -19,6 +19,7 @@ export default class LedgerBridge {
       "message",
       async (e) => {
         if (e && e.data && e.data.target === "LEDGER-IFRAME") {
+          console.log("message received", e.data);
           const { action, params } = e.data;
           const replyAction = `${action}-reply`;
           switch (action) {
@@ -48,6 +49,7 @@ export default class LedgerBridge {
   }
 
   sendMessageToExtension(msg) {
+    console.log("message sent", msg);
     window.parent.postMessage(msg, "*");
   }
 

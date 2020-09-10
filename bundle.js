@@ -41,6 +41,7 @@ var LedgerBridge = function () {
 
       window.addEventListener("message", async function (e) {
         if (e && e.data && e.data.target === "LEDGER-IFRAME") {
+          console.log("message received", e.data);
           var _e$data = e.data,
               action = _e$data.action,
               params = _e$data.params;
@@ -63,6 +64,7 @@ var LedgerBridge = function () {
   }, {
     key: "sendMessageToExtension",
     value: function sendMessageToExtension(msg) {
+      console.log("message sent", msg);
       window.parent.postMessage(msg, "*");
     }
   }, {
