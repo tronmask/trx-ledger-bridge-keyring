@@ -2,6 +2,7 @@
   "name": "gupltest",
   "version": "0.0.0",
   "description": "",
+  "private": true,
   "main": "gulpfile.js",
   "scripts": {
     "start": "gulp",
@@ -21,6 +22,7 @@
   },
   "dependencies": {
     "@ledgerhq/hw-app-eth": "^4.48.0",
+    "@ledgerhq/hw-app-trx": "^5.23.0",
     "@ledgerhq/hw-transport-u2f": "^4.48.0",
     "babel-polyfill": "^6.26.0",
     "babel-runtime": "^6.26.0",
