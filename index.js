@@ -3,6 +3,7 @@ const { ethAddress } = require('@opentron/tron-eth-conversions')
 const HDKey = require('hdkey')
 const ethUtil = require('ethereumjs-util')
 const sigUtil = require('eth-sig-util')
+const { getTransaction } = require('@opentron/tron-sig-util');
 
 // Tron's HD path
 const hdPathString = `m/44'/195'/0'`
@@ -30,7 +31,7 @@ function txToTxParams (tx) {
   return {
     to: hex(tx.to),
     // warning: throws if tx is not signed...
-    from: hex(tx.from),
+    // from: hex(tx.from),
     value: hex(tx.value),
     nonce: hex(tx.nonce),
     gasPrice: hex(tx.gasPrice),
@@ -188,76 +189,64 @@ class LedgerBridgeKeyring extends EventEmitter {
     delete this.accountIndexes[ethUtil.toChecksumAddress(address)]
   }
 
-  /*
-      tx.sign(privKey);
-    // note: we need to sign the tx before accessing `.from` field
-    const txParams = txToTxParams(tx);
-    const tronTx = await signForTron(txParams, privKey.toString("hex"), opts);
-    */
-
-
   // tx is an instance of the ethereumjs-transaction class.
-  signTransaction (address, tx) {
-    const txParams = txToTxParams(tx)
-    return new Promise((resolve, reject) => {
-      this.unlock().then((_) => {
-        tx.v = ethUtil.bufferToHex(tx.getChainId())
-        tx.r = '0x00'
-        tx.s = '0x00'
+  async signTransaction (address, tx) {
+    const txParams = {
+      ...txToTxParams(tx),
+      from: address,
+    }
+    const tronTx = await getTransaction(txParams, { chainId: tx.getChainId() })
 
-        let hdPath
-        if (this._isBIP44()) {
-          const checksummedAddress = ethUtil.toChecksumAddress(address)
-          if (!Object.keys(this.accountIndexes).includes(checksummedAddress)) {
-            reject(
-              new Error(
-                `Ledger: Index for address '${checksummedAddress}' not found`,
-              ),
-            )
-          }
-          hdPath = this._getPathForIndex(
-            this.accountIndexes[checksummedAddress],
-          )
-        } else {
-          hdPath = this._toLedgerPath(this._pathFromAddress(address))
-        }
+    // todo
+    const txHex = tronTx.raw_data_hex
 
-        this._sendMessage(
-          {
-            action: 'ledger-sign-transaction',
-            params: {
-              // TODO: tron serialization!
-              tx: tx.serialize().toString('hex'),
-              hdPath,
-              to: ethUtil.bufferToHex(tx.to).toLowerCase(),
-            },
-          },
-          ({ success, payload }) => {
-            if (success) {
-              tx.v = Buffer.from(payload.v, 'hex')
-              tx.r = Buffer.from(payload.r, 'hex')
-              tx.s = Buffer.from(payload.s, 'hex')
+    await this.unlock()
 
-              const valid = tx.verifySignature()
-              if (valid) {
-                resolve(tx)
-              } else {
-                reject(
-                  new Error('Ledger: The transaction signature is not valid'),
-                )
-              }
-            } else {
-              reject(
-                new Error(
-                  payload.error ||
-                    'Ledger: Unknown error while signing transaction',
-                ),
-              )
-            }
-          },
+    // tx.v = ethUtil.bufferToHex(tx.getChainId())
+    // tx.r = '0x00'
+    // tx.s = '0x00'
+
+    let hdPath
+    if (this._isBIP44()) {
+      const checksummedAddress = ethUtil.toChecksumAddress(address)
+      if (!Object.keys(this.accountIndexes).includes(checksummedAddress)) {
+        throw new Error(
+          `Ledger: Index for address '${checksummedAddress}' not found`,
         )
-      })
+      }
+      hdPath = this._getPathForIndex(
+        this.accountIndexes[checksummedAddress],
+      )
+    } else {
+      hdPath = this._toLedgerPath(this._pathFromAddress(address))
+    }
+
+    const { success, payload } = await this._sendMessageAsync({
+      action: 'ledger-sign-transaction',
+      params: {
+        // TODO: tron serialization!
+        tx: txHex,
+        hdPath,
+        to: ethUtil.bufferToHex(tx.to).toLowerCase(),
+      },
     })
+    if (success) {
+      // tx.v = Buffer.from(payload.v, 'hex')
+      // tx.r = Buffer.from(payload.r, 'hex')
+      // tx.s = Buffer.from(payload.s, 'hex')
+
+      // const valid = tx.verifySignature()
+      const valid = true // todo
+      if (valid) {
+        return tx
+      }
+      throw new Error('Ledger: The transaction signature is not valid')
+    } else {
+      throw new Error(
+        payload.error ||
+        'Ledger: Unknown error while signing transaction',
+      )
+    }
   }
 
   signMessage (withAccount, data) {
@@ -375,6 +364,14 @@ class LedgerBridgeKeyring extends EventEmitter {
       return undefined
     }
     window.addEventListener('message', eventListener)
+  }
+
+  async _sendMessageAsync (msg) {
+    return new Promise((resolve, _reject) => {
+      this._sendMessage(msg, (data) => {
+        return resolve(data)
+      })
+    })
   }
 
   async __getPage (increment) {

@@ -36,6 +36,7 @@
   },
   "dependencies": {
     "@opentron/tron-eth-conversions": "^0.4.5",
+    "@opentron/tron-sig-util": "^0.4.5",
     "eth-sig-util": "^1.4.2",
     "ethereumjs-tx": "^1.3.4",
     "ethereumjs-util": "^5.1.5",
