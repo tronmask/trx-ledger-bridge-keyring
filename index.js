@@ -223,11 +223,18 @@ class LedgerBridgeKeyring extends EventEmitter {
       },
     })
     if (success) {
+      const sig = payload
       // tx.v = Buffer.from(payload.v, 'hex')
       // tx.r = Buffer.from(payload.r, 'hex')
       // tx.s = Buffer.from(payload.s, 'hex')
 
       // const valid = tx.verifySignature()
+      /* eslint-disable */
+      tx.tronTx = {
+        ...tronTx,
+        signature: [sig],
+      }
+
       const valid = true // todo
       if (valid) {
         return tx
