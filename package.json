@@ -1,7 +1,7 @@
 {
-  "name": "@metamask/eth-ledger-bridge-keyring",
+  "name": "@tronmask/trx-ledger-bridge-keyring",
   "version": "0.2.6",
-  "description": "A MetaMask compatible keyring, for ledger hardware wallets",
+  "description": "A TronMask compatible keyring, for ledger hardware wallets",
   "main": "index.js",
   "files": [
     "index.js"
@@ -17,7 +17,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/MetaMask/eth-ledger-bridge-keyring.git"
+    "url": "git+https://github.com/TronMask/trx-ledger-bridge-keyring.git"
   },
   "keywords": [
     "ethereum",
@@ -28,9 +28,9 @@
   "author": "Bruno Barbieri",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/MetaMask/eth-ledger-bridge-keyring/issues"
+    "url": "https://github.com/TronMask/trx-ledger-bridge-keyring/issues"
   },
-  "homepage": "https://github.com/MetaMask/eth-ledger-bridge-keyring#readme",
+  "homepage": "https://github.com/TronMask/trx-ledger-bridge-keyring#readme",
   "resolutions": {
     "mocha/**/mkdirp": "^0.5.3"
   },
