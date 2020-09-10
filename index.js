@@ -1,4 +1,5 @@
 const { EventEmitter } = require('events')
+const { ethAddress } = require('@opentron/tron-eth-conversions')
 const HDKey = require('hdkey')
 const ethUtil = require('ethereumjs-util')
 const sigUtil = require('eth-sig-util')
@@ -24,6 +25,7 @@ const NETWORK_API_URLS = {
 class LedgerBridgeKeyring extends EventEmitter {
   constructor (opts = {}) {
     super()
+    console.log('LedgerBridgeKeyring', this)
     this.accountIndexes = {}
     this.bridgeUrl = null
     this.type = type
@@ -96,10 +98,15 @@ class LedgerBridgeKeyring extends EventEmitter {
           },
         },
         ({ success, payload }) => {
+          console.log({ success, payload })
           if (success) {
             this.hdk.publicKey = Buffer.from(payload.publicKey, 'hex')
-            this.hdk.chainCode = Buffer.from(payload.chainCode, 'hex')
-            resolve(payload.address)
+            // Tron bridge does not return "chainCode"
+            // this.hdk.chainCode = Buffer.from(payload.chainCode, 'hex')
+            // Tron bridge returns address in Tron format, convert back to hex format
+            const address = ethAddress.fromTron(payload.address)
+            console.log({ address })
+            resolve(address)
           } else {
             reject(payload.error || 'Unknown error')
           }
@@ -344,22 +351,27 @@ class LedgerBridgeKeyring extends EventEmitter {
   }
 
   async __getPage (increment) {
-    this.page += increment
+    try {
+      this.page += increment
 
-    if (this.page <= 0) {
-      this.page = 1
-    }
-    const from = (this.page - 1) * this.perPage
-    const to = from + this.perPage
+      if (this.page <= 0) {
+        this.page = 1
+      }
+      const from = (this.page - 1) * this.perPage
+      const to = from + this.perPage
 
-    await this.unlock()
-    let accounts
-    if (this._isBIP44()) {
-      accounts = await this._getAccountsBIP44(from, to)
-    } else {
-      accounts = this._getAccountsLegacy(from, to)
+      await this.unlock()
+      let accounts
+      if (this._isBIP44()) {
+        accounts = await this._getAccountsBIP44(from, to)
+      } else {
+        accounts = this._getAccountsLegacy(from, to)
+      }
+      return accounts
+    } catch (err) {
+      console.error("__getPage error", err)
+      throw err
     }
-    return accounts
   }
 
   async _getAccountsBIP44 (from, to) {
@@ -455,12 +467,12 @@ class LedgerBridgeKeyring extends EventEmitter {
   _getPathForIndex (index) {
     // Check if the path is BIP 44 (Ledger Live)
     return this._isBIP44()
-      ? `m/44'/60'/${index}'/0/0`
+      ? `m/44'/195'/${index}'/0/0`
       : `${this.hdPath}/${index}`
   }
 
   _isBIP44 () {
-    return this.hdPath === `m/44'/60'/0'/0/0`
+    return this.hdPath === `m/44'/195'/0'/0/0`
   }
 
   _toLedgerPath (path) {
