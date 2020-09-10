@@ -27,6 +27,7 @@ const fakeAccounts = [
   '0x6772C4B1E841b295960Bb4662dceD9bb71726357',
   '0x41bEAD6585eCA6c79B553Ca136f0DFA78A006899',
 ]
+const NILE_CHAIN_ID = 201910292
 
 const fakeXPubKey = 'xpub6FnCn6nSzZAw5Tw7cgR9bi15UV96gLZhjDstkXXxvCLsUXBGXPdSnLFbdpq8p9HmGsApME5hQTZ3emM2rnY5agb9rXpVGyy3bdW6EEgAtqt'
 const fakeHdKey = HDKey.fromExtendedKey(fakeXPubKey)
@@ -37,8 +38,7 @@ const fakeTx = new EthereumTx({
   to: '0x0000000000000000000000000000000000000000',
   value: '0x00',
   data: '0x7f7465737432000000000000000000000000000000000000000000000000000000600057',
-  // EIP 155 chainId - mainnet: 1, ropsten: 3
-  chainId: 1,
+  chainId: NILE_CHAIN_ID,
 })
 
 chai.use(spies)
@@ -290,15 +290,9 @@ describe('LedgerBridgeKeyring', function () {
   })
 
   describe('signMessage', function () {
-    it('should call create a listener waiting for the iframe response', function (done) {
-
-      chai.spy.on(window, 'addEventListener')
-      setTimeout((_) => {
-        keyring.signPersonalMessage(fakeAccounts[0], '0x123')
-        expect(window.addEventListener).to.have.been.calledWith('message')
-      }, 1800)
-      chai.spy.restore(window, 'addEventListener')
-      done()
+    it('should call create a listener waiting for the iframe response', async function () {
+      keyring.signPersonalMessage(fakeAccounts[0], '0x123')
+      // does not throw
     })
   })
 
@@ -335,29 +329,54 @@ describe('LedgerBridgeKeyring', function () {
   })
 
   describe('signTransaction', function () {
-    it('should call should call create a listener waiting for the iframe response', function (done) {
+    it('should throw an error with non existing contract', async function () {
+      try {
+        await keyring.signTransaction(fakeAccounts[1], fakeTx)
+      } catch (err) {
+        expect(err.message).match(/CONTRACT_VALIDATE_ERROR/u)
+        return
+      }
+      throw new Error('should have thrown')
+    })
 
-      chai.spy.on(window, 'addEventListener')
-      setTimeout((_) => {
-        keyring.signTransaction(fakeAccounts[0], fakeTx)
-        expect(window.addEventListener).to.have.been.calledWith('message')
-      }, 1800)
-      chai.spy.restore(window, 'addEventListener')
-      done()
+    /* eslint-disable mocha/no-skipped-tests */
+    xit('should not throw an error with valid tx', async function () {
+      const ledgerPublicKey = process.env.LEDGER_PUBLIC_KEY
+      if (!ledgerPublicKey) {
+        throw new Error('for testing, set LEDGER_PUBLIC_KEY env variable')
+      }
+      const ledgerAccount = '0xc5f4c6ff48Ee4d64b4286aCd0BD720463A0a5b72'
+      const kr = new LedgerBridgeKeyring({
+        hdPath: `m/44'/195'/0'/0/0`,
+        accountIndexes: {
+          [ledgerAccount]: 2,
+        },
+        accounts: [
+          ledgerAccount.toLowerCase(),
+        ],
+      })
+      kr.hdk.publicKey = Buffer.from(ledgerPublicKey, 'hex')
 
+      const tx = new EthereumTx({
+        nonce: '0x00',
+        gasPrice: '0x09184e72a000',
+        gasLimit: '0x2710',
+        to: '0x6F03da1E3a50b4F346A68D26835A3E349172661b',
+        value: '0xf4240', // 1 TRX
+        data: '0x',
+        chainId: NILE_CHAIN_ID,
+      })
+      await kr.signTransaction(ledgerAccount, tx)
+      // To test with ledger:
+      // copy paste the message logged and in gh-pages branch: `npm start`
+      // Go to browser console and: window.postMessage(copiedMsg)
     })
   })
 
   describe('signPersonalMessage', function () {
-    it('should call create a listener waiting for the iframe response', function (done) {
-
-      chai.spy.on(window, 'addEventListener')
-      setTimeout((_) => {
-        keyring.signPersonalMessage(fakeAccounts[0], 'some msg')
-        expect(window.addEventListener).to.have.been.calledWith('message')
-      }, 1800)
-      chai.spy.restore(window, 'addEventListener')
-      done()
+    it('should call create a listener waiting for the iframe response', async function () {
+      keyring.signPersonalMessage(fakeAccounts[0], 'some msg')
+      // did not throw :)
     })
   })
 
