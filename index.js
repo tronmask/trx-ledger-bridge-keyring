@@ -22,10 +22,27 @@ const NETWORK_API_URLS = {
 }
 */
 
+function hex (buf) {
+  return `0x${buf.toString('hex')}`
+}
+
+function txToTxParams (tx) {
+  return {
+    to: hex(tx.to),
+    // warning: throws if tx is not signed...
+    from: hex(tx.from),
+    value: hex(tx.value),
+    nonce: hex(tx.nonce),
+    gasPrice: hex(tx.gasPrice),
+    gasLimit: hex(tx.gasLimit),
+    data: hex(tx.data),
+  }
+}
+
 class LedgerBridgeKeyring extends EventEmitter {
   constructor (opts = {}) {
     super()
-    console.log('LedgerBridgeKeyring', this)
+    // console.log('LedgerBridgeKeyring', this)
     this.accountIndexes = {}
     this.bridgeUrl = null
     this.type = type
@@ -41,14 +58,14 @@ class LedgerBridgeKeyring extends EventEmitter {
     this._setupIframe()
   }
 
-  serialize () {
-    return Promise.resolve({
+  async serialize () {
+    return {
       hdPath: this.hdPath,
       accounts: this.accounts,
       accountIndexes: this.accountIndexes,
       bridgeUrl: this.bridgeUrl,
       implementFullBIP44: false,
-    })
+    }
   }
 
   deserialize (opts = {}) {
@@ -171,8 +188,17 @@ class LedgerBridgeKeyring extends EventEmitter {
     delete this.accountIndexes[ethUtil.toChecksumAddress(address)]
   }
 
+  /*
+      tx.sign(privKey);
+    // note: we need to sign the tx before accessing `.from` field
+    const txParams = txToTxParams(tx);
+    const tronTx = await signForTron(txParams, privKey.toString("hex"), opts);
+    */
+
+
   // tx is an instance of the ethereumjs-transaction class.
   signTransaction (address, tx) {
+    const txParams = txToTxParams(tx)
     return new Promise((resolve, reject) => {
       this.unlock().then((_) => {
         tx.v = ethUtil.bufferToHex(tx.getChainId())
@@ -200,6 +226,7 @@ class LedgerBridgeKeyring extends EventEmitter {
           {
             action: 'ledger-sign-transaction',
             params: {
+              // TODO: tron serialization!
               tx: tx.serialize().toString('hex'),
               hdPath,
               to: ethUtil.bufferToHex(tx.to).toLowerCase(),
@@ -480,7 +507,7 @@ class LedgerBridgeKeyring extends EventEmitter {
   }
 
   async _hasPreviousTransactions (_address) {
-    return false
+    return true
   }
 
   // TODO: port to tron. i think we can use java-tron api directly

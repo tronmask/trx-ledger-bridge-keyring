@@ -67,7 +67,7 @@ describe('LedgerBridgeKeyring', function () {
 
   describe('constructor', function () {
     it('constructs', function (done) {
-      const t = new LedgerBridgeKeyring({ hdPath: `m/44'/60'/0'` })
+      const t = new LedgerBridgeKeyring({ hdPath: `m/44'/195'/0'` })
       assert.equal(typeof t, 'object')
       t.getAccounts()
         .then((accounts) => {
@@ -81,8 +81,8 @@ describe('LedgerBridgeKeyring', function () {
     it('serializes an instance', function (done) {
       keyring.serialize()
         .then((output) => {
-          assert.equal(output.bridgeUrl, 'https://metamask.github.io/eth-ledger-bridge-keyring')
-          assert.equal(output.hdPath, `m/44'/60'/0'`)
+          assert.equal(output.bridgeUrl, 'https://tronmask.github.io/trx-ledger-bridge-keyring')
+          assert.equal(output.hdPath, `m/44'/195'/0'`)
           assert.equal(Array.isArray(output.accounts), true)
           assert.equal(output.accounts.length, 0)
           done()
@@ -104,7 +104,7 @@ describe('LedgerBridgeKeyring', function () {
           return keyring.serialize()
         }).then((serialized) => {
           assert.equal(serialized.accounts.length, 0, 'restores 0 accounts')
-          assert.equal(serialized.bridgeUrl, 'https://metamask.github.io/eth-ledger-bridge-keyring', 'restores bridgeUrl')
+          assert.equal(serialized.bridgeUrl, 'https://tronmask.github.io/trx-ledger-bridge-keyring', 'restores bridgeUrl')
           assert.equal(serialized.hdPath, someHdPath, 'restores hdPath')
           done()
         })
