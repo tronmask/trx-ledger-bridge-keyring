@@ -12,12 +12,14 @@ const pathBase = 'm'
 const MAX_INDEX = 1000
 
 // @TODO(tron)
+/*
 const NETWORK_API_URLS = {
   ropsten: 'http://api-ropsten.etherscan.io',
   kovan: 'http://api-kovan.etherscan.io',
   rinkeby: 'https://api-rinkeby.etherscan.io',
   mainnet: 'https://api.etherscan.io',
 }
+*/
 
 class LedgerBridgeKeyring extends EventEmitter {
   constructor (opts = {}) {
@@ -465,7 +467,7 @@ class LedgerBridgeKeyring extends EventEmitter {
     return path.toString().replace('m/', '')
   }
 
-  async _hasPreviousTransactions (address) {
+  async _hasPreviousTransactions (_address) {
     return false
   }
 
@@ -486,7 +488,7 @@ class LedgerBridgeKeyring extends EventEmitter {
   _getApiUrl() {
     return `TODO_TRON_NETWORK_API_URL (${this.network})`;
   }
-	*/
+  */
 }
 
 LedgerBridgeKeyring.type = type
