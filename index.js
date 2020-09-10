@@ -123,7 +123,6 @@ class LedgerBridgeKeyring extends EventEmitter {
             // this.hdk.chainCode = Buffer.from(payload.chainCode, 'hex')
             // Tron bridge returns address in Tron format, convert back to hex format
             const address = ethAddress.fromTron(payload.address)
-            console.log({ address })
             resolve(address)
           } else {
             reject(payload.error || 'Unknown error')
@@ -133,31 +132,24 @@ class LedgerBridgeKeyring extends EventEmitter {
     })
   }
 
-  addAccounts (n = 1) {
-    return new Promise((resolve, reject) => {
-      this.unlock()
-        .then(async (_) => {
-          const from = this.unlockedAccount
-          const to = from + n
-          this.accounts = []
-          for (let i = from; i < to; i++) {
-            let address
-            if (this._isBIP44()) {
-              const path = this._getPathForIndex(i)
-              address = await this.unlock(path)
-              this.accountIndexes[ethUtil.toChecksumAddress(address)] = i
-            } else {
-              address = this._addressFromIndex(pathBase, i)
-            }
-            this.accounts.push(address)
-            this.page = 0
-          }
-          resolve(this.accounts)
-        })
-        .catch((e) => {
-          reject(e)
-        })
-    })
+  async addAccounts (n = 1) {
+    await this.unlock()
+    const from = this.unlockedAccount
+    const to = from + n
+    this.accounts = []
+    for (let i = from; i < to; i++) {
+      let address
+      if (this._isBIP44()) {
+        const path = this._getPathForIndex(i)
+        address = await this.unlock(path)
+        this.accountIndexes[ethUtil.toChecksumAddress(address)] = i
+      } else {
+        address = this._addressFromIndex(pathBase, i)
+      }
+      this.accounts.push(address)
+      this.page = 0
+    }
+    return this.accounts
   }
 
   getFirstPage () {
@@ -351,6 +343,7 @@ class LedgerBridgeKeyring extends EventEmitter {
 
   _sendMessage (msg, cb) {
     msg.target = 'LEDGER-IFRAME'
+    console.log('_sendMessage', msg)
     this.iframe.contentWindow.postMessage(msg, '*')
     const eventListener = ({ origin, data }) => {
       if (origin !== this._getOrigin()) {
@@ -438,8 +431,8 @@ class LedgerBridgeKeyring extends EventEmitter {
     return accounts
   }
 
-  _padLeftEven (hex) {
-    return hex.length % 2 === 0 ? hex : `0${hex}`
+  _padLeftEven (hexStr) {
+    return hexStr.length % 2 === 0 ? hexStr : `0${hexStr}`
   }
 
   _normalize (buf) {
@@ -473,15 +466,15 @@ class LedgerBridgeKeyring extends EventEmitter {
     return this._getPathForIndex(index)
   }
 
-  _toAscii (hex) {
+  _toAscii (hexStr) {
     let str = ''
     let i = 0
-    const l = hex.length
-    if (hex.substring(0, 2) === '0x') {
+    const l = hexStr.length
+    if (hexStr.substring(0, 2) === '0x') {
       i = 2
     }
     for (; i < l; i += 2) {
-      const code = parseInt(hex.substr(i, 2), 16)
+      const code = parseInt(hexStr.substr(i, 2), 16)
       str += String.fromCharCode(code)
     }
 

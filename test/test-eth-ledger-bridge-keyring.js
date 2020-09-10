@@ -40,15 +40,6 @@ const fakeTx = new EthereumTx({
   data: '0x7f7465737432000000000000000000000000000000000000000000000000000000600057',
   chainId: NILE_CHAIN_ID,
 })
-const fakeValidTx = new EthereumTx({
-  nonce: '0x00',
-  gasPrice: '0x09184e72a000',
-  gasLimit: '0x2710',
-  to: '0x6F03da1E3a50b4F346A68D26835A3E349172661b',
-  value: '0xdeadbeef',
-  data: '0x',
-  chainId: NILE_CHAIN_ID,
-})
 
 chai.use(spies)
 
@@ -350,11 +341,35 @@ describe('LedgerBridgeKeyring', function () {
 
     /* eslint-disable mocha/no-skipped-tests */
     xit('should not throw an error with valid tx', async function () {
-      try {
-        await keyring.signTransaction(fakeAccounts[0], fakeValidTx)
-      } catch (err) {
-        console.log(err)
+      const ledgerPublicKey = process.env.LEDGER_PUBLIC_KEY
+      if (!ledgerPublicKey) {
+        throw new Error('for testing, set LEDGER_PUBLIC_KEY env variable')
       }
+      const ledgerAccount = '0xc5f4c6ff48Ee4d64b4286aCd0BD720463A0a5b72'
+      const kr = new LedgerBridgeKeyring({
+        hdPath: `m/44'/195'/0'/0/0`,
+        accountIndexes: {
+          [ledgerAccount]: 2,
+        },
+        accounts: [
+          ledgerAccount.toLowerCase(),
+        ],
+      })
+      kr.hdk.publicKey = Buffer.from(ledgerPublicKey, 'hex')
+
+      const tx = new EthereumTx({
+        nonce: '0x00',
+        gasPrice: '0x09184e72a000',
+        gasLimit: '0x2710',
+        to: '0x6F03da1E3a50b4F346A68D26835A3E349172661b',
+        value: '0xf4240', // 1 TRX
+        data: '0x',
+        chainId: NILE_CHAIN_ID,
+      })
+      await kr.signTransaction(ledgerAccount, tx)
+      // To test with ledger:
+      // copy paste the message logged and in gh-pages branch: `npm start`
+      // Go to browser console and: window.postMessage(copiedMsg)
     })
   })
 
