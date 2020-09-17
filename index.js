@@ -188,7 +188,10 @@ class LedgerBridgeKeyring extends EventEmitter {
       from: address,
     }
     const tronTx = await getTransaction(txParams, { chainId: tx.getChainId() })
+    return await this.signTronTransaction(address, tronTx)
+  }
 
+  async signTronTransaction (address, tronTx) {
     // todo
     const txHex = tronTx.raw_data_hex
 
@@ -219,7 +222,7 @@ class LedgerBridgeKeyring extends EventEmitter {
         // TODO: tron serialization!
         tx: txHex,
         hdPath,
-        to: ethUtil.bufferToHex(tx.to).toLowerCase(),
+        // to: ethUtil.bufferToHex(tx.to).toLowerCase(),
       },
     })
     if (success) {
